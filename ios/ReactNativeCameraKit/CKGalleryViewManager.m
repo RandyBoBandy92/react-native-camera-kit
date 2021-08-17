@@ -44,6 +44,7 @@ typedef void (^CompletionBlock)(BOOL success);
 @property (nonatomic, strong) PHImageRequestOptions *imageRequestOptions;
 
 @property (nonatomic, strong) PHFetchOptions *fetchOptions;
+@property (nonatomic, strong) PHFetchOptions *favoriteOptions;
 @property (nonatomic, strong) NSString *selectedBase64Image;
 @property (nonatomic, strong) UIImage *selectedImageIcon;
 @property (nonatomic, strong) UIImage *unSelectedImageIcon;
@@ -129,6 +130,17 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
     return _fetchOptions;
 }
 
+-(PHFetchOptions *)favoriteOptions {
+    if (!_fetchOptions) {
+        PHFetchOptions *fetchOptions = [[PHFetchOptions alloc] init];
+        fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
+        fetchOptions.predicate = @[[NSPredicate predicateWithValue:@"isFavorite"], [NSPredicate predicateWithFormat:@"mediaType = %d",PHAssetMediaTypeImage]];
+
+        _fetchOptions = fetchOptions;
+    }
+
+    return _fetchOptions;
+}
 
 -(void)removeFromSuperview {
     [CKGalleryCollectionViewCell cleanStaticsVariables];
@@ -327,8 +339,12 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
 
 -(void)setAlbumName:(NSString *)albumName {
 
+    if ([albumName caseInsensitiveCompare:@"favorites"] == NSOrderedSame) {
 
-    if ([albumName caseInsensitiveCompare:@"all photos"] == NSOrderedSame || !albumName || [albumName isEqualToString:@""]) {
+        PHFetchResult *favoriteFetchResults = [PHAsset fetchAssetsWithOptions:self.favoriteOptions];
+        [self upadateCollectionView:favoriteFetchResults animated:(self.galleryData != nil)];
+        return;
+    } else if ([albumName caseInsensitiveCompare:@"all photos"] == NSOrderedSame || !albumName || [albumName isEqualToString:@""]) {
 
         PHFetchResult *allPhotosFetchResults = [PHAsset fetchAssetsWithOptions:self.fetchOptions];
         [self upadateCollectionView:allPhotosFetchResults animated:(self.galleryData != nil)];

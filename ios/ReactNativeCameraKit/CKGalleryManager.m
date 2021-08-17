@@ -14,8 +14,10 @@ typedef void (^AlbumsBlock)(NSDictionary *albums);
 
 @property (nonatomic, strong) PHFetchResult *allPhotos;
 @property (nonatomic, strong) PHFetchResult *smartAlbums;
+@property (nonatomic, strong) PHFetchResult *userFavorites;
 @property (nonatomic, strong) PHFetchResult *topLevelUserCollections;
 @property (nonatomic, strong) PHFetchOptions *fetchOptions;
+@property (nonatomic, strong) PHFetchOptions *favoriteOptions;
 
 @end
 
@@ -37,6 +39,14 @@ RCT_EXPORT_MODULE();
     return _fetchOptions;
 }
 
+-(PHFetchOptions*)favoriteOptions {
+    if (!_fetchOptions) {
+        _fetchOptions = [[PHFetchOptions alloc] init];
+        _fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
+        _fetchOptions.predicate = [NSPredicate predicateWithValue:@"isFavorite"];
+    }
+    return _fetchOptions;
+}
 
 -(PHFetchResult *)allPhotos {
     if (!_allPhotos) {
@@ -45,6 +55,19 @@ RCT_EXPORT_MODULE();
     return _allPhotos;
 }
 
+-(PHFetchResult *)userFavorites {
+    if (!_allPhotos) {
+        _allPhotos = [PHAsset fetchAssetsWithOptions:self.favoriteOptions];
+    }
+    return _allPhotos;
+}
+
+-(PHFetchResult *)smartAlbums {
+    if (!_smartAlbums) {
+        _smartAlbums = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeAny options:nil];
+    }
+    return _smartAlbums;
+}
 
 -(PHFetchResult *)topLevelUserCollections {
     if (!_topLevelUserCollections) {
@@ -60,8 +83,9 @@ RCT_EXPORT_MODULE();
 -(void)extractCollection:(id)collection
      imageRequestOptions:(PHImageRequestOptions*)options
            thumbnailSize:(CGSize)thumbnailSize
-                   block:(AlbumsBlock)block {
-
+                   block:(AlbumsBlock)block
+           albumOverride:(NSString*)albumOverride {
+    
     NSInteger collectionCount;
     if ([collection isKindOfClass:[PHAssetCollection class]]) {
         collectionCount = [PHAsset fetchAssetsInAssetCollection:collection options:nil].count;
@@ -72,34 +96,34 @@ RCT_EXPORT_MODULE();
     else {
         collectionCount = 0;
     }
-
+    
     if (collectionCount > 0){
-
-        NSString *albumName = ([collection isKindOfClass:[PHAssetCollection class]]) ? ((PHAssetCollection*)collection).localizedTitle : @"All photos";
+        
+        NSString *albumName = ([collection isKindOfClass:[PHAssetCollection class]]) ? ((PHAssetCollection*)collection).localizedTitle : albumOverride;
         PHFetchResult *fetchResult = ([collection isKindOfClass:[PHAssetCollection class]]) ? [PHAsset fetchKeyAssetsInAssetCollection:collection options:nil] : (PHAssetCollection*)collection;
         PHAsset *thumbnail = [fetchResult firstObject];
-
+        
         NSMutableDictionary *albumInfo = [[NSMutableDictionary alloc] init];
         albumInfo[@"albumName"] = albumName;
         albumInfo[@"imagesCount"] = [NSNumber numberWithInteger:collectionCount];
-
+        
         [[PHImageManager defaultManager]
          requestImageForAsset:thumbnail
          targetSize:thumbnailSize
          contentMode:PHImageContentModeAspectFit
          options:options
          resultHandler:^(UIImage *result, NSDictionary *info) {
-
-             if (!albumInfo[@"image"]) {
-                 albumInfo[@"image"] = [UIImageJPEGRepresentation(result, 1.0) base64Encoding];
-             }
-
-             if (block) {
-                 block(albumInfo);
-             }
-         }];
+            
+            if (!albumInfo[@"image"]) {
+                albumInfo[@"image"] = [UIImageJPEGRepresentation(result, 1.0) base64Encoding];
+            }
+            
+            if (block) {
+                block(albumInfo);
+            }
+        }];
     }
-
+    
     else {
         if (block) {
             block(nil);
@@ -112,25 +136,25 @@ RCT_EXPORT_MODULE();
              imageRequestOptions:(PHImageRequestOptions*)options
                    thumbnailSize:(CGSize)thumbnailSize
                            block:(AlbumsBlock)block {
-
+    
     NSMutableArray *albumsArray = [[NSMutableArray alloc] init];
     NSInteger collectionCount = collections.count;
-
+    
     if (collectionCount == 0) {
         if (block) {
             block(nil);
         }
     }
-
+    
     [collections enumerateObjectsUsingBlock:^(PHAssetCollection *collection, NSUInteger idx, BOOL * _Nonnull stop) {
-
-        [self extractCollection:collection imageRequestOptions:options thumbnailSize:thumbnailSize block:^(NSDictionary *album) {
-
+        
+        [self extractCollection:collection imageRequestOptions:options thumbnailSize:thumbnailSize block:^(NSDictionary *album) albumOverride:@"" {
+            
             NSString *albumName = collection.localizedTitle;
             if (album) {
                 [albumsArray addObject:album];
             }
-
+            
             if (idx == collectionCount-1) {
                 if (block) {
                     block(@{@"albums" : albumsArray});
@@ -143,48 +167,53 @@ RCT_EXPORT_MODULE();
 
 RCT_EXPORT_METHOD(getAlbumsWithThumbnails:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject) {
-
+    
     PHImageRequestOptions *imageRequestOptions = [[PHImageRequestOptions alloc] init];
     imageRequestOptions.resizeMode = PHImageRequestOptionsResizeModeExact;
     imageRequestOptions.synchronous = YES;
     NSInteger retinaScale = [UIScreen mainScreen].scale;
     CGSize retinaSquare = CGSizeMake(100*retinaScale, 100*retinaScale);
-
+    
     __block NSMutableArray *albumsArray = [[NSMutableArray alloc] init];
-
-    [self extractCollectionsDetails:self.topLevelUserCollections
-                imageRequestOptions:imageRequestOptions
-                      thumbnailSize:retinaSquare
-                              block:^(NSDictionary *albums) {
-
-                                  [self extractCollection:self.allPhotos imageRequestOptions:imageRequestOptions thumbnailSize:retinaSquare block:^(NSDictionary *allPhotosAlbum) {
-
-
-                                      if (resolve) {
-                                          NSMutableArray *albumsArrayAns = [[NSMutableArray alloc] init];;
-
-                                          if(albums[@"albums"]) {
-                                              [albumsArrayAns addObjectsFromArray:albums[@"albums"]];
-                                          }
-                                          if(allPhotosAlbum) {
-                                              [albumsArrayAns insertObject:allPhotosAlbum atIndex:0];
-                                          }
-
-                                          if (!albumsArrayAns || albumsArrayAns.count == 0) {
-                                              NSError *error = [[NSError alloc] initWithDomain:NSCocoaErrorDomain
-                                                                                          code:-100 userInfo:nil];
-
-                                              reject(@"-100", @"no albums", error);
-                                          }
-                                          else {
-                                              if (resolve) {
-                                                  NSDictionary *ans = @{@"albums":  albumsArrayAns };
-                                                  resolve(ans);
-                                              }
-                                          }
-                                      }
-                                  }];
-                              }];
+    
+    [self extractCollectionsDetails:self.topLevelUserCollections imageRequestOptions:imageRequestOptionsn thumbnailSize:retinaSquare block:^(NSDictionary *albums) {
+        [self extractCollectionsDetails:self.smartAlbums imageRequestOptions:imageRequestOptionsn thumbnailSize:retinaSquare block:^(NSDictionary *smartAlbums) {
+            [self extractCollection:self.userFavorites imageRequestOptions:imageRequestOptions thumbnailSize:retinaSquare block:^(NSDictionary *favoritesAlbum) albumOverride:@"Favorites" {
+                [self extractCollection:self.allPhotos imageRequestOptions:imageRequestOptions thumbnailSize:retinaSquare block:^(NSDictionary *allPhotosAlbum) albumOverride:@"All Photos" {
+                    
+                    if (resolve) {
+                        NSMutableArray *albumsArrayAns = [[NSMutableArray alloc] init];;
+                        
+                        if(albums[@"albums"]) {
+                            [albumsArrayAns addObjectsFromArray:albums[@"albums"]];
+                        }
+                        if(smartAlbums[@"albums"]) {
+                            [albumsArrayAns addObjectsFromArray:smartAlbums[@"albums"]];
+                        }
+                        if(allPhotosAlbum) {
+                            [albumsArrayAns insertObject:allPhotosAlbum atIndex:0];
+                        }
+                        if(favoritesAlbum) {
+                            [albumsArrayAns insertObject:favoritesAlbum atIndex:1];
+                        }
+                        
+                        if (!albumsArrayAns || albumsArrayAns.count == 0) {
+                            NSError *error = [[NSError alloc] initWithDomain:NSCocoaErrorDomain
+                                                                        code:-100 userInfo:nil];
+                            
+                            reject(@"-100", @"no albums", error);
+                        }
+                        else {
+                            if (resolve) {
+                                NSDictionary *ans = @{@"albums":  albumsArrayAns };
+                                resolve(ans);
+                            }
+                        }
+                    }
+                }];
+            }];
+        }];
+    }];
 }
 
 RCT_EXPORT_METHOD(getImagesForIds:(NSArray*)imagesIdArray
@@ -198,7 +227,7 @@ RCT_EXPORT_METHOD(getImagesForIds:(NSArray*)imagesIdArray
                   imageQuality:(NSString*)imageQuality
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(__unused RCTPromiseRejectBlock)reject) {
-
+    
     [self imagesForIds:imagesIdArray imageQuality:imageQuality resolve:resolve reject:reject];
 }
 
@@ -206,22 +235,22 @@ RCT_EXPORT_METHOD(resizeImage:(NSDictionary*)image
                   quality:(NSString*)quality
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(__unused RCTPromiseRejectBlock)reject) {
-
+    
     NSMutableDictionary *ans = [NSMutableDictionary dictionaryWithDictionary:image];
-
+    
     NSString *imageUrlString = image[@"uri"];
     if (imageUrlString) {
-
+        
         NSURL *url = [NSURL URLWithString:imageUrlString];
         if (!url) {
             resolve(nil);
         }
         NSData *data = [NSData dataWithContentsOfURL:url];
-
+        
         UIImage *originalImage = [UIImage imageWithData:data];
         CKCompressedImage *compressedImage = [[CKCompressedImage alloc] initWithImage:originalImage imageQuality:quality];
-
-
+        
+        
         NSURL *temporaryFileURL = [CKCamera saveToTmpFolder:compressedImage.data];
         if (temporaryFileURL) {
             ans[@"uri"] = temporaryFileURL.description;
@@ -239,28 +268,28 @@ RCT_EXPORT_METHOD(resizeImage:(NSDictionary*)image
        imageQuality:(NSString*)imageQuality
             resolve:(RCTPromiseResolveBlock)resolve
              reject:(__unused RCTPromiseRejectBlock)reject {
-
+    
     if (!imagesIdArray || ![imagesIdArray isKindOfClass:[NSArray class]] || imagesIdArray.count <= 0 ) {
         resolve(@{@"images": @[]});
         return;
     }
-
+    
     NSMutableArray *assetsArray = [[NSMutableArray alloc] initWithArray:imagesIdArray];
-
+    
     PHImageRequestOptions *imageRequestOptions = [[PHImageRequestOptions alloc] init];
     imageRequestOptions.synchronous = YES;
-
+    
     PHFetchResult *assets = [PHAsset fetchAssetsWithLocalIdentifiers:imagesIdArray options:nil];
-
+    
     for (PHAsset *asset in assets) {
-
+        
         NSDictionary *assetInfoDict = [CKGalleryViewManager infoForAsset:asset imageRequestOptions:imageRequestOptions imageQuality:imageQuality];
         NSString *assetLocalId = asset.localIdentifier;
-
+        
         if (assetInfoDict && assetInfoDict[@"uri"] && assetInfoDict[@"size"] && assetInfoDict[@"name"] && assetLocalId) {
-
+            
             NSUInteger originalArrayIndex = [imagesIdArray indexOfObject:assetLocalId];
-
+            
             [assetsArray replaceObjectAtIndex:originalArrayIndex withObject:@{@"uri": assetInfoDict[@"uri"],
                                                                               @"width": assetInfoDict[@"width"],
                                                                               @"height": assetInfoDict[@"height"],
@@ -269,19 +298,19 @@ RCT_EXPORT_METHOD(resizeImage:(NSDictionary*)image
                                                                               @"id": assetLocalId}];
         }
     }
-
+    
     NSMutableArray *resolveArray = [NSMutableArray new];
     for (id obj in assetsArray) {
         if ([obj isKindOfClass:[NSDictionary class]]) {
             [resolveArray addObject:obj];
         }
     }
-
+    
     if (resolve) {
         resolve(@{@"images": resolveArray});
     }
-
-
+    
+    
 }
 
 
@@ -325,9 +354,9 @@ RCT_EXPORT_METHOD(requestDevicePhotosAuthorization:(RCTPromiseResolveBlock)resol
 }
 
 +(NSNumber*)checkDeviceGalleryAuthorizationStatus {
-
+    
     PHAuthorizationStatus authorizationStatus = [PHPhotoLibrary authorizationStatus];
-
+    
     if (authorizationStatus == PHAuthorizationStatusAuthorized) {
         return @YES;
     }
@@ -351,7 +380,7 @@ RCT_EXPORT_METHOD(deleteTempImage:(NSString*)tempImageURL
             result[@"error"] = [error description];
         }
     }
-
+    
     if(resolve) {
         resolve(result);
     }
