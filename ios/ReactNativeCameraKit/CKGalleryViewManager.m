@@ -130,18 +130,6 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
     return _fetchOptions;
 }
 
--(PHFetchOptions *)favoriteOptions {
-    if (!_fetchOptions) {
-        PHFetchOptions *fetchOptions = [[PHFetchOptions alloc] init];
-        fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
-        fetchOptions.predicate = @[[NSPredicate predicateWithValue:@"isFavorite"], [NSPredicate predicateWithFormat:@"mediaType = %d",PHAssetMediaTypeImage]];
-
-        _fetchOptions = fetchOptions;
-    }
-
-    return _fetchOptions;
-}
-
 -(void)removeFromSuperview {
     [CKGalleryCollectionViewCell cleanStaticsVariables];
     [super removeFromSuperview];
@@ -340,8 +328,8 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
 -(void)setAlbumName:(NSString *)albumName {
 
     if ([albumName caseInsensitiveCompare:@"favorites"] == NSOrderedSame) {
-
-        PHFetchResult *favoriteFetchResults = [PHAsset fetchAssetsWithOptions:self.favoriteOptions];
+        PHAssetCollection* favorites = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumFavorites options:nil][0];
+        PHFetchResult *favoriteFetchResults = [PHAsset fetchAssetsInAssetCollection:favorites options:self.fetchOptions];
         [self upadateCollectionView:favoriteFetchResults animated:(self.galleryData != nil)];
         return;
     } else if ([albumName caseInsensitiveCompare:@"all photos"] == NSOrderedSame || !albumName || [albumName isEqualToString:@""]) {
