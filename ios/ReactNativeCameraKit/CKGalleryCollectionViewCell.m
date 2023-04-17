@@ -15,9 +15,11 @@
 
 #define BADGE_MARGIN                    5
 #define BADGE_COLOR                     0x00ADF5
+#define FAVORITE_COLOR                     0xFFFFFF
 #define IMAGE_OVERLAY_ALPHA             0.5
 
 #define SELECTION_SELECTED_IMAGE        @"selectedImage"
+#define FAVORITE_FAVORITE_IMAGE         @"favoriteImage"
 #define SELECTION_UNSELECTED_IMAGE      @"unselectedImage"
 #define SELECTION_IMAGE_POSITION        @"imagePosition"
 #define SELECTION_OVERLAY_COLOR         @"overlayColor"
@@ -32,10 +34,12 @@ alpha:1.0]
 
 static UIImage *selectedImageIcon = nil;
 static UIImage *unSelectedImageIcon = nil;
+static UIImage *favoriteImageIcon = nil;
 static NSDictionary *supported = nil;
 static UIColor *imageStrokeColor = nil;
 static NSNumber *imageStrokeColorWidth = nil;
 static NSDictionary *selection = nil;
+static NSDictionary *favorite = nil;
 static NSString *imagePosition = nil;
 static UIColor *selectionOverlayColor = nil;
 static UIColor *remoteDownloadIndicatorColor = nil;
@@ -46,6 +50,7 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
 @property (strong, nonatomic) UIImageView *imageView;
 @property (strong, nonatomic) UIButton *button;
 @property (strong, nonatomic) UIImageView *badgeImageView;
+@property (strong, nonatomic) UIImageView *favoriteImageView;
 @property (nonatomic, strong) UIView *imageOveray;
 @property (nonatomic, strong) UIView *unsupportedView;
 @property (nonatomic, strong) SelectionGesture *gesture;
@@ -64,9 +69,12 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
     if (image) selectedImageIcon = image;
 }
 
-
 +(void)setUnSlectedImageIcon:(UIImage*)image {
     if (image) unSelectedImageIcon = image;
+}
+
++(void)setFavoriteImageIcon:(UIImage*)image {
+    if (image) favoriteImageIcon = image;
 }
 
 +(void)setSupported:(NSDictionary*)newSupported {
@@ -81,19 +89,24 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
     if (width) imageStrokeColorWidth = width;
 }
 
-
 +(void)setSelection:(NSDictionary*)selectionDict {
     if (selectionDict) selection = selectionDict;
+}
+
++(void)setFavorite:(NSDictionary*)favoriteDict {
+    if (favoriteDict) favorite = favoriteDict;
 }
 
 
 +(void)cleanStaticsVariables {
     selectedImageIcon = nil;
     unSelectedImageIcon = nil;
+    favoriteImageIcon = nil;
     supported = nil;
     imageStrokeColor = nil;
     imageStrokeColorWidth = nil;
     selection = nil;
+    favorite = nil;
     imagePosition = nil;
     selectionOverlayColor = nil;
     remoteDownloadIndicatorColor = nil;
@@ -186,6 +199,9 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
 
     self.badgeImageView = [[UIImageView alloc] init];
     [self addSubview:self.badgeImageView];
+  
+    self.favoriteImageView = [[UIImageView alloc] init];
+    [self addSubview:self.favoriteImageView];
 
     self.isSupported = YES;
 
@@ -204,6 +220,11 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
     id selectedImageIconProp = selection[SELECTION_SELECTED_IMAGE];
     if(selectedImageIconProp) {
         selectedImageIcon = [RCTConvert UIImage:selectedImageIconProp];
+    }
+    
+    id favoriteImageIconProp = favorite[FAVORITE_FAVORITE_IMAGE];
+    if(favoriteImageIconProp) {
+        favoriteImageIcon = [RCTConvert UIImage:favoriteImageIconProp];
     }
 
     id unselectedImageIconProp = selection[SELECTION_UNSELECTED_IMAGE];
@@ -258,13 +279,21 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
     if (!CGRectIsEmpty(badgeRect)) {
         self.badgeImageView.frame = badgeRect;
     };
+}
 
+-(void)updateFavoriteImageViewFrame {
+    id imagePositionProp = @"bottom-left"; // defualt
+    CGRect badgeRect = [self frameforImagePosition:imagePositionProp image:self.favoriteImageView.image];
+    if (!CGRectIsEmpty(badgeRect)) {
+        self.favoriteImageView.frame = badgeRect;
+    };
 }
 
 - (void)prepareForReuse {
     [super prepareForReuse];
     self.imageView.image = nil;
     self.isSelected = NO;
+    self.isFavorite = NO;
     _isDownloading = NO;
     self.isSupported = YES;
     self.gesture.enabled = YES;
@@ -366,7 +395,6 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
     }
 }
 
-
 -(void)setIsSelected:(BOOL)isSelected {
 
     _isSelected = isSelected;
@@ -402,6 +430,32 @@ static NSString *remoteDownloadIndicatorType = REMOTE_DOWNLOAD_INDICATOR_TYPE_SP
         else {
             self.badgeImageView.image = nil;
         }
+    }
+}
+
+-(void)setIsFavorite:(BOOL)isFavorite {
+
+    _isFavorite = isFavorite;
+
+    if (_isFavorite) {
+        if (favoriteImageIcon) {
+            double frameDuration = 1.0/2.0; // 4 = number of keyframes
+            self.favoriteImageView.image = favoriteImageIcon;
+            [self updateFavoriteImageViewFrame];
+            self.favoriteImageView.transform = CGAffineTransformMakeScale(0.5, 0.5);
+            [UIView animateKeyframesWithDuration:0.2 delay:0 options:0 animations:^{
+                [UIView addKeyframeWithRelativeStartTime:0*frameDuration relativeDuration:frameDuration animations:^{
+                    self.favoriteImageView.transform = CGAffineTransformIdentity;
+                }];
+            } completion:nil];
+
+        }
+        else {
+            self.favoriteImageView.backgroundColor = UIColorFromRGB(FAVORITE_COLOR);
+        }
+    }
+    else {
+        self.favoriteImageView.image = nil;
     }
 }
 

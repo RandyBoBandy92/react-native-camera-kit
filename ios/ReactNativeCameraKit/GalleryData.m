@@ -28,8 +28,9 @@
 
     for (PHAsset *asset in fetchResults) {
         BOOL isSelected = ([selectedImagesIds containsObject:asset.localIdentifier]) ? YES : NO;
+        BOOL isFavorite = asset.isFavorite;
 
-        NSMutableDictionary *assetDictionary = [@{@"asset": asset, @"isSelected": @(isSelected)} mutableCopy];
+        NSMutableDictionary *assetDictionary = [@{@"asset": asset, @"isFavorite": @(isFavorite), @"isSelected": @(isSelected)} mutableCopy];
 
         [array addObject:assetDictionary];
     }

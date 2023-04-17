@@ -39,6 +39,10 @@ export default class CameraKitGalleryView extends Component {
       _.update(transformedProps, 'selection.unselectedImage', (image) => resolveAssetSource(image));
     }
 
+    if (_.get(transformedProps, 'favorite.favoriteImage')) {
+      _.update(transformedProps, 'favorite.favoriteImage', (image) => resolveAssetSource(image));
+    }
+
     if (_.get(transformedProps, 'selection.overlayColor')) {
       _.update(transformedProps, 'selection.overlayColor', (c) => processColor(c));
     }

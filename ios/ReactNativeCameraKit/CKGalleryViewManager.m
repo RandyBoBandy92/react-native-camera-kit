@@ -48,10 +48,12 @@ typedef void (^CompletionBlock)(BOOL success);
 @property (nonatomic, strong) NSString *selectedBase64Image;
 @property (nonatomic, strong) UIImage *selectedImageIcon;
 @property (nonatomic, strong) UIImage *unSelectedImageIcon;
+@property (nonatomic, strong) UIImage *favoriteImageIcon;
 @property (nonatomic, strong) UIColor *imageStrokeColor;
 @property (nonatomic, strong) NSNumber *imageStrokeColorWidth;
 @property (nonatomic, strong) NSNumber *disableSelectionIcons;
 @property (nonatomic, strong) NSDictionary *selection;
+@property (nonatomic, strong) NSDictionary *favorite;
 @property (nonatomic)         UIEdgeInsets contentInset;
 @property (nonatomic)         BOOL alwaysBounce;
 @property (nonatomic)         BOOL isHorizontal;
@@ -208,9 +210,12 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
     [CKGalleryCollectionViewCell setSelectedImageIcon:selectedImage];
 }
 
-
 -(void)setUnSelectedImageIcon:(UIImage *)unSelectedImage {
     [CKGalleryCollectionViewCell setUnSlectedImageIcon:unSelectedImage];
+}
+
+-(void)setFavoriteImageIcon:(UIImage *)favoriteImage {
+    [CKGalleryCollectionViewCell setFavoriteImageIcon:favoriteImage];
 }
 
 -(void)setImageStrokeColor:(UIColor *)imageStrokeColor {
@@ -223,6 +228,10 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
 
 -(void)setSelection:(NSDictionary *)selection {
     [CKGalleryCollectionViewCell setSelection:selection];
+}
+
+-(void)setFavorite:(NSDictionary *)favorite {
+    [CKGalleryCollectionViewCell setFavorite:favorite];
 }
 
 -(void)setContentInset:(UIEdgeInsets)contentInset {
@@ -594,6 +603,7 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
         }
         NSDictionary *assetDictionary = (NSDictionary*)self.galleryData.data[galleryDataIndex];
         ckCell.isSelected = ((NSNumber*)assetDictionary[@"isSelected"]).boolValue;
+        ckCell.isFavorite = ((NSNumber*)assetDictionary[@"isFavorite"]).boolValue;
     }
 }
 
@@ -740,6 +750,7 @@ RCT_EXPORT_VIEW_PROPERTY(columnCount, NSNumber);
 RCT_EXPORT_VIEW_PROPERTY(onTapImage, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(selectedImageIcon, UIImage);
 RCT_EXPORT_VIEW_PROPERTY(unSelectedImageIcon, UIImage);
+RCT_EXPORT_VIEW_PROPERTY(favoriteImageIcon, UIImage);
 RCT_EXPORT_VIEW_PROPERTY(selectedImages, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(fileTypeSupport, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(imageStrokeColor, UIColor);
@@ -750,6 +761,7 @@ RCT_EXPORT_VIEW_PROPERTY(onCustomButtonPress, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(getUrlOnTapImage, NSNumber);
 RCT_EXPORT_VIEW_PROPERTY(autoSyncSelection, NSNumber);
 RCT_EXPORT_VIEW_PROPERTY(selection, NSDictionary);
+RCT_EXPORT_VIEW_PROPERTY(favorite, NSDictionary);
 RCT_EXPORT_VIEW_PROPERTY(contentInset, UIEdgeInsets);
 RCT_EXPORT_VIEW_PROPERTY(imageQualityOnTap, NSString);
 RCT_EXPORT_VIEW_PROPERTY(alwaysBounce, BOOL);

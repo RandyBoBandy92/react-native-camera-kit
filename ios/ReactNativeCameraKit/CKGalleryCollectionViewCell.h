@@ -22,10 +22,12 @@
 
 +(void)setSelectedImageIcon:(UIImage*)image;
 +(void)setUnSlectedImageIcon:(UIImage*)image;
++(void)setFavoriteImageIcon:(UIImage*)image;
 +(void)setSupported:(NSDictionary*)newSupported;
 +(void)setImageStrokeColor:(UIColor*)strokeColor;
 +(void)setImageStrokeColorWidth:(NSNumber*)width;
 +(void)setSelection:(NSDictionary*)selectionDict;
++(void)setFavorite:(NSDictionary*)favoriteDict;
 +(void)setRemoteDownloadIndicatorColor:(UIColor*)color;
 +(void)setRemoteDownloadIndicatorType:(NSString*)type;
 
@@ -37,6 +39,7 @@
 @property (nonatomic, copy) NSString *representedAssetIdentifier;
 
 @property (nonatomic) BOOL isSelected;
+@property (nonatomic) BOOL isFavorite;
 @property (nonatomic) BOOL isSupported;
 @property (nonatomic) BOOL disableSelectionIcons;
 @property (nonatomic) BOOL isDownloading;

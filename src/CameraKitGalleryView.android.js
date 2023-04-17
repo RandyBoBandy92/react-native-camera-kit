@@ -67,6 +67,11 @@ export default class CameraKitGalleryView extends Component {
       _.update(transformedProps, 'selection.unselectedImage', (image) => resolveAssetSource(image).uri);
     }
 
+    const favoriteImage = _.get(transformedProps, 'favorite.favoriteImage');
+    if (favoriteImage && _.isNumber(favoriteImage)) {
+      _.update(transformedProps, 'favorite.favoriteImage', (image) => resolveAssetSource(image).uri);
+    }
+
     const selectionPosition = _.get(transformedProps, 'selection.imagePosition');
     if (selectionPosition) {
       const positionCode = this.transformSelectedImagePosition(selectionPosition);
