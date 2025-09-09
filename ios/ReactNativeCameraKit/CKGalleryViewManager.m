@@ -72,6 +72,10 @@ typedef void (^CompletionBlock)(BOOL success);
 @property (nonatomic, strong) NSDictionary *fileTypeSupport;
 @property (nonatomic, strong) NSArray *supportedFileTypesArray;
 
+//sorting props
+@property (nonatomic, strong) NSString *sortBy;
+@property (nonatomic, strong) NSString *sortOrder;
+
 @property (nonatomic, strong) RCTBridge *bridge;
 
 @property (nonatomic)         BOOL collectionViewIsScrolling;
@@ -123,7 +127,20 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
 -(PHFetchOptions *)fetchOptions {
     if (!_fetchOptions) {
         PHFetchOptions *fetchOptions = [[PHFetchOptions alloc] init];
-        fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:NO]];
+        
+        // Determine sort key based on sortBy prop
+        NSString *sortKey = @"creationDate"; // default
+        if (self.sortBy && [self.sortBy isEqualToString:@"modificationDate"]) {
+            sortKey = @"modificationDate";
+        }
+        
+        // Determine sort order based on sortOrder prop
+        BOOL ascending = YES; // default
+        if (self.sortOrder && [self.sortOrder isEqualToString:@"descending"]) {
+            ascending = NO;
+        }
+        
+        fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:sortKey ascending:ascending]];
         fetchOptions.predicate = [NSPredicate predicateWithFormat:@"mediaType = %d",PHAssetMediaTypeImage];
 
         _fetchOptions = fetchOptions;
@@ -643,6 +660,26 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
     [self setAlbumName:self.albumName];
 }
 
+-(void)setSortBy:(NSString *)sortBy {
+    _sortBy = sortBy;
+    // Reset fetch options to force regeneration with new sort key
+    _fetchOptions = nil;
+    // Refresh gallery if it's already loaded
+    if (self.galleryData) {
+        [self setAlbumName:self.albumName];
+    }
+}
+
+-(void)setSortOrder:(NSString *)sortOrder {
+    _sortOrder = sortOrder;
+    // Reset fetch options to force regeneration with new sort order
+    _fetchOptions = nil;
+    // Refresh gallery if it's already loaded
+    if (self.galleryData) {
+        [self setAlbumName:self.albumName];
+    }
+}
+
 
 #pragma mark - misc
 
@@ -770,6 +807,8 @@ RCT_EXPORT_VIEW_PROPERTY(remoteDownloadIndicatorColor, UIColor);
 RCT_EXPORT_VIEW_PROPERTY(remoteDownloadIndicatorType, NSString);
 RCT_EXPORT_VIEW_PROPERTY(onRemoteDownloadChanged, RCTDirectEventBlock);
 RCT_EXPORT_VIEW_PROPERTY(iCloudDownloadSimulateTime, NSNumber);
+RCT_EXPORT_VIEW_PROPERTY(sortBy, NSString);
+RCT_EXPORT_VIEW_PROPERTY(sortOrder, NSString);
 
 
 

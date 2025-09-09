@@ -18,6 +18,8 @@ export default class CameraKitGalleryView extends Component {
     const transformedProps = _.cloneDeep(this.props);
     transformedProps.albumName = this.props.albumName ? this.props.albumName : ALL_PHOTOS;
     transformedProps.columnCount = this.props.columnCount && this.props.columnCount > 0 ? this.props.columnCount : DEFAULT_COLUMN_COUNT;
+    transformedProps.sortBy = this.props.sortBy ? this.props.sortBy : 'creationDate';
+    transformedProps.sortOrder = this.props.sortOrder ? this.props.sortOrder : 'ascending';
     _.update(transformedProps, 'fileTypeSupport.unsupportedOverlayColor', (c) => processColor(c));
     _.update(transformedProps, 'fileTypeSupport.unsupportedTextColor', (c) => processColor(c));
     if (transformedProps.fileTypeSupport && transformedProps.fileTypeSupport.unsupportedImage) {

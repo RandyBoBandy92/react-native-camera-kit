@@ -175,6 +175,8 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.AbsViewH
     private ArrayList<String> selectedUris = new ArrayList<>();
     private ArrayList<String> supportedFileTypes = new ArrayList<>();
     private String albumName = "";
+    private String sortBy = "creationDate"; // default to creation date
+    private String sortOrder = "ascending"; // default to ascending order
     private Drawable selectedDrawable;
     private Drawable customButtonImage;
     private Integer selectedDrawableGravity;
@@ -260,6 +262,16 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.AbsViewH
         this.enableSelection = enable;
     }
 
+    public void setSortBy(String sortBy) {
+        this.sortBy = sortBy != null ? sortBy : "creationDate";
+        isDirty = true;
+    }
+
+    public void setSortOrder(String sortOrder) {
+        this.sortOrder = sortOrder != null ? sortOrder : "ascending";
+        isDirty = true;
+    }
+
     @Override
     public int getItemViewType(int position) {
         if (shouldShowCustomButton() && position == 0) {
@@ -288,12 +300,25 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.AbsViewH
             args = new String[]{albumName};
         }
 
+        // Build dynamic sort order
+        String sortColumn = MediaStore.Images.Media.DATE_ADDED; // default for creation date
+        if ("modificationDate".equals(sortBy)) {
+            sortColumn = MediaStore.Images.Media.DATE_MODIFIED;
+        }
+        
+        String sortDirection = "ASC"; // default for ascending
+        if ("descending".equals(sortOrder)) {
+            sortDirection = "DESC";
+        }
+        
+        String sortOrder = sortColumn + " " + sortDirection;
+
         Cursor cursor = reactContext.getApplicationContext().getContentResolver().query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 PROJECTION,
                 selection,
                 args,
-                null
+                sortOrder
         );
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -312,7 +337,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.AbsViewH
         if (shouldShowCustomButton()) {
             images.add(new Image(null, -1, "", 0, 0,0));
         }
-        Collections.reverse(images);
         if (cursor != null) {
           cursor.close();
         }

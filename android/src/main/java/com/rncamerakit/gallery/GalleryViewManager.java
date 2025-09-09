@@ -174,6 +174,26 @@ public class GalleryViewManager extends SimpleViewManager<GalleryView> {
         });
     }
 
+    @ReactProp(name = "sortBy")
+    public void setSortBy(final GalleryView view, final String sortBy) {
+        dispatchOnConfigJobQueue(new Runnable() {
+            @Override
+            public void run() {
+                getViewAdapter(view).setSortBy(sortBy);
+            }
+        });
+    }
+
+    @ReactProp(name = "sortOrder")
+    public void setSortOrder(final GalleryView view, final String sortOrder) {
+        dispatchOnConfigJobQueue(new Runnable() {
+            @Override
+            public void run() {
+                getViewAdapter(view).setSortOrder(sortOrder);
+            }
+        });
+    }
+
     @ReactProp(name = "fileTypeSupport")
     public void setFileTypeSupport(final GalleryView view, final ReadableMap fileTypeSupport) {
         final ReadableArray supportedFileTypes = fileTypeSupport.getArray(SUPPORTED_TYPES_KEY);
