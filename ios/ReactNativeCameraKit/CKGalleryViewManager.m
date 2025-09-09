@@ -371,7 +371,7 @@ static NSString * const CustomCellReuseIdentifier = @"CustomCell";
 
         if ([collection.localizedTitle isEqualToString:albumName]) {
 
-            PHFetchResult *collectionFetchResults = [PHAsset fetchAssetsInAssetCollection:collection options:nil];
+            PHFetchResult *collectionFetchResults = [PHAsset fetchAssetsInAssetCollection:collection options:self.fetchOptions];
             [self upadateCollectionView:collectionFetchResults animated:(self.galleryData != nil)];
             *stop = YES;
             return;
