@@ -335,7 +335,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.AbsViewH
         }
 
         if (shouldShowCustomButton()) {
-            images.add(new Image(null, -1, "", 0, 0,0));
+            images.add(0, new Image(null, -1, "", 0, 0,0));
         }
         if (cursor != null) {
           cursor.close();
